@@ -1,11 +1,33 @@
 # Gather — Free Football Squares
 
-A free, static football squares pool for GitHub Pages. No build, accounts, tracking, or paid services.
+GitHub Pages frontend with a Cloudflare Workers + SQLite-backed Durable Objects backend. No paid runtime dependencies. Cloudflare free-tier quotas apply; use the Workers Free plan.
 
-Enter names one per line, create an evenly distributed 100-square board, and edit game labels. Each game has independent random axis numbers and the same square assignments. Enter scores for Q1, halftime, Q3, and the final (including overtime) to identify winners and build an all-game leaderboard.
+## Shared pools
 
-Download a PNG of the current board or all games, print, export/import a JSON backup, or copy a snapshot link. Snapshot links contain board data in the URL fragment; anyone receiving the link can read it. Browser autosave is local to that browser. This app does not provide multi-user synchronization, online claiming across devices, automatic live scores, payments, or login. Scores are entered manually.
+Create a shared pool, copy its private invite link, and send it to your guests. Up to **20 participants** can join using display names. A returning browser keeps its session; clearing browser data loses that identity. This is a 20-session limit, not verified real-world identity; someone using multiple browsers can occupy multiple spots. Display names must be unique within a pool.
 
-Serve this folder with any static web server, or enable GitHub Pages from the main branch root. No installation required. Google Fonts are optional; system fallbacks work offline.
+Participants tap open squares to claim them and can release only their own squares. Server serialization enforces the participant cap and prevents conflicting claims. All games share square positions. Numbers stay hidden until the host locks picks; the server then randomizes each game's axes and prevents further claims. The host enters quarter scores manually. Guests see updates within about five seconds while the page is active.
 
-Original implementation inspired by the football squares game format; not affiliated with Easy Office Pools.
+Keep the **host access file** private. It restores host controls on another browser. The invite link grants joining access, not host permissions. Anyone it is forwarded to can join while space remains. Joined participants retain access through their saved sessions. Pools are unlisted; API reads require a participant or host session. No email verification, payments, automatic live scoring, or participant removal is implemented.
+
+PNG downloads, printing, and board backups are available. Local boards remain available separately for random name assignment.
+
+## Development and deployment
+
+Frontend: static files at repository root, published from `main` through GitHub Pages. Set `window.GATHER_API` in `config.js` to the deployed Worker origin. This URL is public configuration; never put credentials here.
+
+Backend:
+
+```sh
+npm ci
+npx wrangler login
+npm run dev
+# With the local backend running, in a separate terminal:
+npm test
+# Deploy to your signed-in Cloudflare account:
+npm run deploy
+```
+
+`wrangler.jsonc` declares the Durable Object migration and permitted browser origin. Credentials are managed by Wrangler and must not be committed. Durable Object state survives deployments; do not delete its namespace. Test pools are isolated by random IDs.
+
+Original implementation inspired by football squares; not affiliated with Easy Office Pools.

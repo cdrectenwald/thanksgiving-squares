@@ -1,0 +1,9 @@
+{
+  "name": "gather-squares-api",
+  "main": "backend/worker.mjs",
+  "compatibility_date": "2026-05-01",
+  "workers_dev": true,
+  "vars": {"ALLOWED_ORIGIN": "https://cdrectenwald.github.io"},
+  "durable_objects": {"bindings": [{"name":"POOLS","class_name":"Pool"}]},
+  "migrations": [{"tag":"v1","new_sqlite_classes":["Pool"]}]
+}

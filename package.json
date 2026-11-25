@@ -1,0 +1,17 @@
+{
+  "name": "thanksgiving-squares",
+  "version": "1.0.0",
+  "description": "Free invite-only football squares with shared state and PNG exports",
+  "main": "app.js",
+  "scripts": {
+    "test": "node backend/test.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "wrangler": "^4.86.0"
+  }
+}

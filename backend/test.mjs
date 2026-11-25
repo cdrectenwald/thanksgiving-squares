@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+const base=process.env.API_URL||'http://127.0.0.1:8787';
+async function call(path,method='GET',body,auth){let r=await fetch(base+path,{method,headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()}}
+const state={title:'Integration test',names:'',cells:Array(100).fill(''),games:[{top:'Top',side:'Side',x:[0,1,2,3,4,5,6,7,8,9],y:[0,1,2,3,4,5,6,7,8,9],scores:Array.from({length:4},()=>['',''])}]};
+const c=await call('/p','POST',{state});assert.equal(c.status,201);let {id,admin,invite}=c.data;
+assert.equal((await call('/p/'+id)).status,401);
+assert.equal((await call('/p/'+id+'/join','POST',{invite:'wrong',name:'bad'})).status,403);
+const joins=await Promise.all(Array.from({length:25},(_,i)=>call('/p/'+id+'/join','POST',{invite,name:'Person '+i})));
+assert.equal(joins.filter(j=>j.status===201).length,20);assert.equal(joins.filter(j=>j.status===409).length,5);
+const [a,b]=joins.filter(j=>j.status===201).map(j=>j.data);
+const claims=await Promise.all([call('/p/'+id+'/claim','POST',{index:42},a.session),call('/p/'+id+'/claim','POST',{index:42},b.session)]);assert.equal(claims.filter(j=>j.status===200).length,1);assert.equal(claims.filter(j=>j.status===409).length,1);
+let winner=claims[0].status===200?a:b,loser=winner===a?b:a;
+assert.equal((await call('/p/'+id+'/claim','POST',{index:42,release:true},loser.session)).status,403);
+assert.equal((await call('/p/'+id,'PUT',{state,revision:1},a.session)).status,403);
+let current=await call('/p/'+id,'GET',null,admin);assert.equal(current.data.members.length,20);assert.equal(current.data.claims[42],winner.memberId);assert(!JSON.stringify(current.data).includes('"auth"'));
+assert.equal((await call('/p/'+id,'PUT',{state,revision:1},admin)).status,409);
+assert.equal((await call('/p/'+id+'/claim','POST',{index:42,release:true},winner.session)).status,200);
+current=await call('/p/'+id,'GET',null,admin);assert.equal(current.data.state.cells[42],'');
+state.title='Host update';assert.equal((await call('/p/'+id,'PUT',{state,revision:current.data.revision},admin)).status,200);
+assert.equal((await call('/p/'+id,'GET',null,a.session)).data.state.title,'Host update');
+current=await call('/p/'+id,'GET',null,admin);assert(current.data.state.games[0].x.every(n=>n==='?'));
+assert.equal((await call('/p/'+id+'/lock','POST',{},a.session)).status,403);
+assert.equal((await call('/p/'+id+'/lock','POST',{},admin)).status,200);
+current=await call('/p/'+id,'GET',null,a.session);assert.equal(current.data.locked,true);assert.equal(new Set(current.data.state.games[0].x).size,10);assert(current.data.state.games[0].x.every(Number.isInteger));
+assert.equal((await call('/p/'+id+'/claim','POST',{index:2},a.session)).status,409);
+console.log('PASS: private access, invite validation, concurrent 20-person cap, atomic claims, own-square release, host-only edits, conflict detection, shared reads, credential redaction, hidden numbers, host-only lock, randomized reveal, claims rejected after lock.');

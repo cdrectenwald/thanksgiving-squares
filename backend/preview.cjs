@@ -1,0 +1,3 @@
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),allowed=new Set(['index.html','style.css','app.js','shared.js','config.js']);
+http.createServer((req,res)=>{const file=new URL(req.url,'http://localhost').pathname.slice(1)||'index.html';if(!allowed.has(file)){res.writeHead(404);return res.end()}res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');if(file==='config.js')return res.end("window.GATHER_API='http://localhost:8788';");res.end(fs.readFileSync(path.join(root,file)))}).listen(8080,'127.0.0.1',()=>console.log('Preview: http://localhost:8080'));

@@ -1,11 +1,13 @@
 const $=id=>document.getElementById(id),KEY='gather-squares-v1',periods=['Q1','Half','Q3','Final'];
 function shuffled(a){a=[...a];for(let i=a.length-1;i>0;i--){let v=new Uint32Array(1),limit=4294967296-4294967296%(i+1);do{crypto.getRandomValues(v)}while(v[0]>=limit);let j=v[0]%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
-function game(n){return {top:`Game ${n} • Top team`,side:`Game ${n} • Side team`,x:shuffled([...Array(10).keys()]),y:shuffled([...Array(10).keys()]),scores:periods.map(()=>['',''])}}
+const thanksgivingTeams=[['Chicago Bears','Detroit Lions'],['Philadelphia Eagles','Dallas Cowboys'],['Kansas City Chiefs','Buffalo Bills']];
+function game(n){return {top:thanksgivingTeams[n-1]?.[0]||`Game ${n} • Top team`,side:thanksgivingTeams[n-1]?.[1]||`Game ${n} • Side team`,x:shuffled([...Array(10).keys()]),y:shuffled([...Array(10).keys()]),scores:periods.map(()=>['',''])}}
 let state={title:'Thanksgiving Football Squares',names:'',cells:Array(100).fill(''),games:[game(1),game(2),game(3)]},active=0,editing=0;
 function valid(s){return s&&typeof s.title==='string'&&s.title.length<=100&&typeof s.names==='string'&&s.names.length<=20000&&Array.isArray(s.cells)&&s.cells.length===100&&s.cells.every(x=>typeof x==='string'&&x.length<=100)&&Array.isArray(s.games)&&s.games.length>0&&s.games.length<=20&&s.games.every(g=>typeof g.top==='string'&&g.top.length<=100&&typeof g.side==='string'&&g.side.length<=100&&['x','y'].every(k=>Array.isArray(g[k])&&g[k].length===10&&new Set(g[k]).size===10&&g[k].every(v=>Number.isInteger(v)&&v>=0&&v<=9))&&Array.isArray(g.scores)&&g.scores.length===4&&g.scores.every(p=>Array.isArray(p)&&p.length===2&&p.every(v=>v===''||(/^\d{1,3}$/.test(String(v))&&Number(v)<=999))))}
 function decode(s){return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s),c=>c.charCodeAt(0))))}
 function encode(s){return btoa(Array.from(new TextEncoder().encode(JSON.stringify(s)),b=>String.fromCharCode(b)).join(''))}
 try{let raw=location.hash.startsWith('#pool=')?decode(location.hash.slice(6)):JSON.parse(localStorage.getItem(KEY));if(valid(raw))state=raw;else if(raw)throw Error()}catch{setTimeout(()=>say('Could not load saved board. A fresh board is ready.'),0)}
+state.games.forEach((g,i)=>{if(i<3){if(g.top===`Game ${i+1} • Top team`)g.top=thanksgivingTeams[i][0];if(g.side===`Game ${i+1} • Side team`)g.side=thanksgivingTeams[i][1]}});
 function say(t){$('status').textContent=t}function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{say('Browser storage is unavailable. Download a backup to keep this board.')}}
 function winner(g,p){let [a,b]=g.scores[p];return a===''||b===''?-1:g.y.indexOf(Number(b)%10)*10+g.x.indexOf(Number(a)%10)}
 function textEl(tag,text,cls){let e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e}
